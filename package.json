@@ -1,6 +1,6 @@
 {
   "name": "@prata.ma/vercel-builder",
-  "version": "0.18.8",
+  "version": "0.18.9",
   "repository": "bianpratama/vercel-builder",
   "license": "MIT",
   "exports": {
@@ -22,7 +22,7 @@
     "refresh:example-side-by-side-app": "cd examples/side-by-side/app && rm yarn.lock && yarn && rm -rf node_modules",
     "refresh:fixture": "cd test/fixture/www && rm yarn.lock && yarn && rm -rf node_modules",
     "refresh:fixture-generated": "cd test/fixture-generated/www && rm yarn.lock && yarn && rm -rf node_modules",
-    "refresh:fixture-ts": "cd test/fixture-ts/www && rm yarn.lock && yarn && rm -rf node_modules",
+    "refresh:fixture-ts": "cd test/fixture-ts && rm yarn.lock && yarn && rm -rf node_modules",
     "release": "release-it",
     "test": "jest test"
   },
