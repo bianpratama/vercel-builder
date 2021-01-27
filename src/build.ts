@@ -37,19 +37,26 @@ export async function build (opts: BuildOptions & { config: NuxtBuilderConfig })
   // Validate entrypoint
   validateEntrypoint(entrypoint)
 
-  // Get Nuxt directory
+  // Get Nuxt directory -> apps/neu.app
   const entrypointDirname = path.dirname(entrypoint)
-  // Get Nuxt path
+
+  // Get Nuxt path -> vercel/workpath0/apps/neu.app
   const entrypointPath = path.join(workPath, entrypointDirname)
+
+  // Get root directory
+  const rootDirPath = process.cwd()
+  consola.log('Working directory:', rootDirPath)
+
   // Get folder where we'll store node_modules
-  const modulesPath = path.join(entrypointPath, 'node_modules')
+  const modulesPath = path.join(rootDirPath, 'node_modules')
+  consola.log('Modules path:', modulesPath)
 
   // Create a real filesystem
   consola.log('Downloading files...')
   await download(files, workPath, meta)
 
   // Change current working directory to entrypointPath
-  process.chdir(entrypointPath)
+  // process.chdir(entrypointPath)
   consola.log('Working directory:', process.cwd())
 
   // Read package.json
@@ -57,11 +64,11 @@ export async function build (opts: BuildOptions & { config: NuxtBuilderConfig })
   try {
     pkg = await readJSON('package.json')
   } catch (e) {
-    throw new Error(`Can not read package.json from ${entrypointPath}`)
+    throw new Error(`Can not read package.json from ${rootDirPath}`)
   }
 
   // Node version
-  const nodeVersion = await getNodeVersion(entrypointPath, undefined, {}, meta)
+  const nodeVersion = await getNodeVersion(rootDirPath, undefined, {}, meta)
   const spawnOpts = getSpawnOptions(meta, nodeVersion)
 
   // Prepare TypeScript environment if required.
@@ -70,7 +77,7 @@ export async function build (opts: BuildOptions & { config: NuxtBuilderConfig })
 
   if (usesTypescript) {
     await prepareTypescriptEnvironment({
-      pkg, spawnOpts, rootDir: entrypointPath
+      pkg, spawnOpts, rootDir: rootDirPath
     })
   }
 
@@ -90,7 +97,7 @@ export async function build (opts: BuildOptions & { config: NuxtBuilderConfig })
   }
 
   // Cache dir
-  const cachePath = path.resolve(entrypointPath, '.vercel_cache')
+  const cachePath = path.resolve(rootDirPath, '.vercel_cache')
   await fs.mkdirp(cachePath)
 
   const yarnCachePath = path.join(cachePath, 'yarn')
@@ -100,10 +107,10 @@ export async function build (opts: BuildOptions & { config: NuxtBuilderConfig })
   startStep('Install devDependencies')
 
   // Prepare node_modules
-  await prepareNodeModules(entrypointPath, 'node_modules_dev')
+  await prepareNodeModules(rootDirPath, 'node_modules_dev')
 
   // Install all dependencies
-  await runNpmInstall(entrypointPath, [
+  await runNpmInstall(rootDirPath, [
     '--prefer-offline',
     '--frozen-lockfile',
     '--non-interactive',
@@ -115,7 +122,7 @@ export async function build (opts: BuildOptions & { config: NuxtBuilderConfig })
   // ----------------- Pre build -----------------
   if (pkg.scripts && Object.keys(pkg.scripts).includes('now-build')) {
     startStep('Pre build')
-    await runPackageJsonScript(entrypointPath, 'now-build', spawnOpts)
+    await runPackageJsonScript(rootDirPath, 'now-build', spawnOpts)
   }
 
   // ----------------- Nuxt build -----------------
@@ -124,7 +131,7 @@ export async function build (opts: BuildOptions & { config: NuxtBuilderConfig })
   let compiledTypescriptFiles: { [filePath: string]: FileFsRef } = {}
   if (needsTypescriptBuild) {
     const { tscOptions } = config
-    compiledTypescriptFiles = await compileTypescriptBuildFiles({ rootDir: entrypointPath, spawnOpts, tscOptions })
+    compiledTypescriptFiles = await compileTypescriptBuildFiles({ rootDir: rootDirPath, spawnOpts, tscOptions })
   }
 
   // Read nuxt.config.js
@@ -165,7 +172,7 @@ export async function build (opts: BuildOptions & { config: NuxtBuilderConfig })
   const nuxtDep = preparePkgForProd(pkg)
   await fs.writeJSON('package.json', pkg)
 
-  await runNpmInstall(entrypointPath, [
+  await runNpmInstall(rootDirPath, [
     '--prefer-offline',
     '--pure-lockfile',
     '--non-interactive',
@@ -181,7 +188,7 @@ export async function build (opts: BuildOptions & { config: NuxtBuilderConfig })
   }, meta)
 
   // Validate nuxt version
-  const nuxtPkg = require(resolveFrom(entrypointPath, `@nuxt/core${nuxtDep.suffix}/package.json`))
+  const nuxtPkg = require(resolveFrom(rootDirPath, `@nuxt/core${nuxtDep.suffix}/package.json`))
   if (!gte(nuxtPkg.version, '2.4.0')) {
     throw new Error(`nuxt >= 2.4.0 is required, detected version ${nuxtPkg.version}`)
   }
