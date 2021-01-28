@@ -218,17 +218,18 @@ export async function prepareNodeModules (entrypointPath: string, modulesDir: st
   }
 }
 
-export function copyBuildFiles (buildFiles: string[], rootPath: string, entrypointPath: string): void {
+export async function copyBuildFiles (buildFiles: string[], rootPath: string, entrypointPath: string): Promise<void> {
   // const files = [
   //   'package.json',
   //   'yarn.lock',
   //   'tsconfig.json'
   // ]
 
-  buildFiles.forEach((fileDir: string) => {
+  await Promise.all(buildFiles.map((fileDir: string) => {
+    consola.log(`⏳ Copying ${fileDir}...`)
     const compiledPath = path.join(rootPath, fileDir)
     const newPath = path.join(entrypointPath, fileDir)
 
-    fs.copySync(compiledPath, newPath)
-  })
+    return fs.copySync(compiledPath, newPath)
+  }))
 }

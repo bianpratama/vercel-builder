@@ -68,7 +68,7 @@ export async function build (opts: BuildOptions & { config: NuxtBuilderConfig })
   consola.log('📁 Working directory:', process.cwd())
 
   if (config.buildFiles) {
-    copyBuildFiles(config.buildFiles, rootPath, entrypointPath)
+    await copyBuildFiles(config.buildFiles, rootPath, entrypointPath)
   }
 
   process.chdir(entrypointPath)
