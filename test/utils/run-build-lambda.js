@@ -13,7 +13,7 @@ function runAnalyze (wrapper, context) {
 async function runBuildLambda (inputPath) {
   const inputFiles = await glob('**', inputPath)
 
-  const nowJsonRef = inputFiles['now.json']
+  const nowJsonRef = inputFiles['apps/one/now.json']
 
   const nowJson = require(nowJsonRef.fsPath)
 
@@ -47,6 +47,8 @@ async function runBuildLambda (inputPath) {
     workPath,
     entrypoint
   })
+
+  // consola.log('buildResult', buildResult)
 
   return {
     analyzeResult,

@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "apps/one/nuxt.config.ts",
+      "use": "../..",
+      "config": {
+        "app": "one",
+        "serverFiles": [
+          "custom/*.js"
+        ],
+        "buildFiles": [
+          "package.json",
+          "yarn.lock",
+          "tsconfig.json"
+        ],
+        "tscOptions": {
+          "sourceMap": false
+        }
+      }
+    }
+  ]
+}

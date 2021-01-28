@@ -6,10 +6,16 @@ module.exports = {
     thing
   },
   rootDir: resolve(__dirname, '../..'),
-  buildDir: resolve(__dirname, '.nuxt'),
+  buildDir: resolve(__dirname, '../../.nuxt'),
   srcDir: __dirname,
   buildModules: ['@nuxt/typescript-build'],
   modules: ['~/modules/module.ts'],
+  build: {
+    extend (config: any) {
+      config.resolve.alias.base = resolve(__dirname, '../../base')
+      config.resolve.alias['@base'] = resolve(__dirname, '../../base')
+    }
+  },
   typescript: {
     typeCheck: {
       typescript: {

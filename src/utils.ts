@@ -18,7 +18,7 @@ export type MutablePackageJson = Mutable<PackageJson>
 export function exec (cmd: string, args: string[], { env, ...opts }: SpawnOptions = {}): Promise<ExecaReturnValue> {
   args = args.filter(Boolean)
 
-  consola.log('Running', cmd, ...args)
+  consola.log('⏳ Running', cmd, ...args)
 
   return execa('npx', [cmd, ...args], {
     stdout: process.stdout,
@@ -171,6 +171,7 @@ export function endStep (): void {
 
 export function startStep (step: string): void {
   endStep()
+  consola.log('')
   consola.log(dash + step + dash)
   _step = step
   _stepStartTime = process.hrtime()
@@ -215,4 +216,19 @@ export async function prepareNodeModules (entrypointPath: string, modulesDir: st
   } catch (e) {
     consola.log(`Error linking/unlinking ${modulesDir}.`, e)
   }
+}
+
+export function copyBuildFiles (buildFiles: string[], rootPath: string, entrypointPath: string): void {
+  // const files = [
+  //   'package.json',
+  //   'yarn.lock',
+  //   'tsconfig.json'
+  // ]
+
+  buildFiles.forEach((fileDir: string) => {
+    const compiledPath = path.join(rootPath, fileDir)
+    const newPath = path.join(entrypointPath, fileDir)
+
+    fs.copySync(compiledPath, newPath)
+  })
 }

@@ -1,24 +1,27 @@
 import type { SpawnOptions } from 'child_process'
 import path from 'path'
+// import consola from 'consola'
 
 import { glob, FileFsRef, PackageJson } from '@vercel/build-utils'
 import fs from 'fs-extra'
 import replaceInFile from 'replace-in-file'
 
-import { exec, getNuxtConfig, getNuxtConfigName, readJSON } from './utils'
+import { exec, getNuxtConfig, readJSON } from './utils'
 
 export interface JsonOptions { [key: string]: number | boolean | string | Array<number | boolean | string> }
 
 interface CompileTypescriptOptions {
-    spawnOpts: SpawnOptions;
-    rootDir: string;
-    tscOptions?: JsonOptions;
+  spawnOpts: SpawnOptions;
+  rootPath: string;
+  entrypointPath: string;
+  entrypointDir: string;
+  tscOptions?: JsonOptions;
 }
 
 interface PrepareTypescriptOptions {
-    pkg: PackageJson;
-    spawnOpts: SpawnOptions;
-    rootDir: string;
+  pkg: PackageJson;
+  spawnOpts: SpawnOptions;
+  rootDir: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -71,12 +74,17 @@ async function getTypescriptCompilerOptions (rootDir: string, options: JsonOptio
   return [...compilerOptions, '--noEmit', 'false', '--rootDir', rootDir, '--outDir', 'now_compiled']
 }
 
-export async function compileTypescriptBuildFiles ({ rootDir, spawnOpts, tscOptions }: CompileTypescriptOptions): Promise<{ [filePath: string]: FileFsRef }> {
-  const nuxtConfigName = getNuxtConfigName(rootDir)
-  const compilerOptions = await getTypescriptCompilerOptions(rootDir, tscOptions)
+export async function compileTypescriptBuildFiles ({ entrypointPath, spawnOpts, tscOptions }: CompileTypescriptOptions): Promise<{ [filePath: string]: FileFsRef }> {
+  const nuxtConfigPath = path.join(entrypointPath, 'nuxt.config.ts')
+  const compilerOptions = await getTypescriptCompilerOptions(entrypointPath, tscOptions)
+
   await fs.mkdirp('now_compiled')
-  await exec('tsc', [...compilerOptions, nuxtConfigName], spawnOpts)
-  const nuxtConfigFile = getNuxtConfig(rootDir, 'now_compiled/nuxt.config.js')
+  await exec('tsc', [...compilerOptions, nuxtConfigPath], spawnOpts)
+
+  // const appCompiledPath = path.join('now_compiled', entrypointDir)
+  // const nuxtConfigCompiledPath = path.join(appCompiledPath, 'nuxt.config.js')
+  // const nuxtConfigFile = getNuxtConfig(entrypointPath, nuxtConfigCompiledPath)
+  const nuxtConfigFile = getNuxtConfig(entrypointPath, 'now_compiled/nuxt.config.js')
   const { serverMiddleware, modules } = nuxtConfigFile
 
   const filesToCompile: string[] = [
@@ -84,6 +92,7 @@ export async function compileTypescriptBuildFiles ({ rootDir, spawnOpts, tscOpti
     ...(modules || [])
   ].reduce((filesToCompile, item) => {
     let itemPath = ''
+
     if (typeof item === 'string') {
       itemPath = item
     } else if (typeof item === 'object' && Array.isArray(item)) {
@@ -94,29 +103,40 @@ export async function compileTypescriptBuildFiles ({ rootDir, spawnOpts, tscOpti
     } else if (typeof item === 'object' && typeof item.handler === 'string') {
       itemPath = item.handler
     }
+
     if (itemPath) {
-      const srcDir = nuxtConfigFile.srcDir ? (path.relative(rootDir, nuxtConfigFile.srcDir)).replace('now_compiled', '.') : '.'
-      const resolvedPath = path.resolve(rootDir, itemPath.replace(/^[@~]\//, `${srcDir}/`).replace(/\.ts$/, ''))
+      const srcDir = nuxtConfigFile.srcDir ? (path.relative(entrypointPath, nuxtConfigFile.srcDir)).replace('now_compiled', '.') : '.'
+      // consola.log('srcDir', srcDir)
+
+      const resolvedPath = path.resolve(entrypointPath, itemPath.replace(/^[@~]\//, `${srcDir}/`).replace(/\.ts$/, ''))
+      // consola.log('resolvedPath', resolvedPath)
+
       if (fs.existsSync(`${resolvedPath}.ts`)) {
         filesToCompile.push(resolvedPath)
         replaceInFile.sync({
-          files: path.resolve(rootDir, 'now_compiled/nuxt.config.js'),
+          files: path.resolve(entrypointPath, 'now_compiled/nuxt.config.js'),
           from: new RegExp(`(?<=['"\`])${itemPath}(?=['"\`])`, 'g'),
           to: itemPath.replace(/\.ts$/, '')
         })
       }
     }
+
     return filesToCompile
   }, [] as string[])
+
   await Promise.all(
     filesToCompile.map(file => exec('tsc', [...compilerOptions, file]))
   )
-  const files = await glob('**', path.join(rootDir, 'now_compiled'))
+
+  const files = await glob('**', path.join(entrypointPath, 'now_compiled'))
+
   Object.keys(files).forEach((filename) => {
     const compiledPath = files[filename].fsPath
     const newPath = compiledPath.replace('/now_compiled/', '/')
+
     fs.moveSync(compiledPath, newPath, { overwrite: true })
     files[filename].fsPath = newPath
   })
+
   return files
 }
