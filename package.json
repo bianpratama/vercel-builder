@@ -1,6 +1,6 @@
 {
   "name": "@prata.ma/vercel-builder",
-  "version": "0.18.16",
+  "version": "0.18.17",
   "repository": "bianpratama/vercel-builder",
   "license": "MIT",
   "exports": {
