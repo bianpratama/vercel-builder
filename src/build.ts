@@ -7,7 +7,7 @@ import fs from 'fs-extra'
 import resolveFrom from 'resolve-from'
 import { gte, gt } from 'semver'
 
-import { copyBuildFiles, endStep, exec, getNuxtConfig, getNuxtConfigName, globAndPrefix, MutablePackageJson, prepareNodeModules, preparePkgForProd, readJSON, startStep, validateEntrypoint } from './utils'
+import { endStep, exec, getNuxtConfig, getNuxtConfigName, globAndPrefix, MutablePackageJson, prepareNodeModules, preparePkgForProd, readJSON, startStep, validateEntrypoint } from './utils'
 import { prepareTypescriptEnvironment, compileTypescriptBuildFiles, JsonOptions } from './typescript'
 
 interface BuilderOutput {
@@ -39,10 +39,6 @@ export async function build (opts: BuildOptions & { config: NuxtBuilderConfig })
   // Validate entrypoint
   validateEntrypoint(entrypoint)
 
-  // Get current app -> xxx
-  const currentApp = config.app as string
-  consola.log('💡 Current app:', currentApp)
-
   // Get Nuxt directory -> apps/xxx
   const entrypointDir = path.dirname(entrypoint)
   consola.log('📁 Entry point directory:', entrypointDir)
@@ -63,14 +59,7 @@ export async function build (opts: BuildOptions & { config: NuxtBuilderConfig })
   consola.log('⏳ Downloading files...')
   await download(files, workPath, meta)
 
-  // Change current working directory to rootPath
-  process.chdir(rootPath)
-  consola.log('📁 Working directory:', process.cwd())
-
-  if (config.buildFiles) {
-    await copyBuildFiles(config.buildFiles, rootPath, entrypointPath)
-  }
-
+  // Change current working directory to entrypointPath
   process.chdir(entrypointPath)
   consola.log('📁 Working directory:', process.cwd())
 
@@ -143,7 +132,7 @@ export async function build (opts: BuildOptions & { config: NuxtBuilderConfig })
   let compiledTypescriptFiles: { [filePath: string]: FileFsRef } = {}
   if (needsTypescriptBuild) {
     const { tscOptions } = config
-    compiledTypescriptFiles = await compileTypescriptBuildFiles({ rootPath, entrypointPath, entrypointDir, spawnOpts, tscOptions })
+    compiledTypescriptFiles = await compileTypescriptBuildFiles({ rootDir: entrypointPath, spawnOpts, tscOptions })
   }
 
   // Read nuxt.config.js
@@ -174,14 +163,6 @@ export async function build (opts: BuildOptions & { config: NuxtBuilderConfig })
   // const nuxtConfigFilePath = path.join(entrypointPath, 'nuxt.config.js')
   const nuxtConfigFilePath = path.join(entrypointDir, 'nuxt.config.js')
   consola.log('💡 Nuxt configuration path:', nuxtConfigFilePath)
-
-  // if (!fs.existsSync(nuxtConfigFilePath)) {
-  //   consola.error('Nuxt configuration file not exists!')
-  // } else {
-  //   consola.success('Nuxt configuration file exists!')
-  // }
-
-  // process.chdir(entrypointPath)
 
   await exec('nuxt', [
     'build',
@@ -245,24 +226,19 @@ export async function build (opts: BuildOptions & { config: NuxtBuilderConfig })
 
   // Static files
   const staticFiles = await glob('**', path.join(entrypointPath, srcDir, staticDir))
-  consola.log('🗂  staticFiles', staticFiles)
-
-  // process.chdir(entrypointPath)
-
-  // const buildPath = path.join(rootPath, '.nuxt', currentApp)
-  // const buildDir2 = path.join('.nuxt', currentApp)
+  // consola.log('🗂  staticFiles', staticFiles)
 
   // Client dist files
   const clientDistDir = path.join(entrypointPath, buildDir, 'dist/client')
   consola.log('📁 Client dist path:', clientDistDir)
   const clientDistFiles = await globAndPrefix('**', clientDistDir, publicPath)
-  consola.log('🗂  clientDistFiles', clientDistFiles)
+  // consola.log('🗂  clientDistFiles', clientDistFiles)
 
   // Server dist files
   const serverDistDir = path.join(entrypointPath, buildDir, 'dist/server')
   consola.log('📁 Server dist path:', serverDistDir)
-  const serverDistFiles = await globAndPrefix('**', serverDistDir, path.join('.nuxt', 'dist/server'))
-  consola.log('🗂  serverDistFiles', serverDistFiles)
+  const serverDistFiles = await globAndPrefix('**', serverDistDir, path.join(buildDir, 'dist/server'))
+  // consola.log('🗂  serverDistFiles', serverDistFiles)
 
   // Generated static files
   const generatedDir = path.join(entrypointPath, 'dist')

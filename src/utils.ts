@@ -18,7 +18,7 @@ export type MutablePackageJson = Mutable<PackageJson>
 export function exec (cmd: string, args: string[], { env, ...opts }: SpawnOptions = {}): Promise<ExecaReturnValue> {
   args = args.filter(Boolean)
 
-  consola.log('⏳ Running', cmd, ...args)
+  consola.log('Running', cmd, ...args)
 
   return execa('npx', [cmd, ...args], {
     stdout: process.stdout,
@@ -38,7 +38,7 @@ export function exec (cmd: string, args: string[], { env, ...opts }: SpawnOption
  * Read in a JSON file with support for UTF-16 fallback.
  */
 
-export async function readJSON <T = unknown> (filename: string): Promise<T> {
+export async function readJSON<T = unknown> (filename: string): Promise<T> {
   try {
     return await fs.readJSON(filename)
   } catch {
@@ -171,7 +171,6 @@ export function endStep (): void {
 
 export function startStep (step: string): void {
   endStep()
-  consola.log('')
   consola.log(dash + step + dash)
   _step = step
   _stepStartTime = process.hrtime()
@@ -216,20 +215,4 @@ export async function prepareNodeModules (entrypointPath: string, modulesDir: st
   } catch (e) {
     consola.log(`Error linking/unlinking ${modulesDir}.`, e)
   }
-}
-
-export async function copyBuildFiles (buildFiles: string[], rootPath: string, entrypointPath: string): Promise<void> {
-  // const files = [
-  //   'package.json',
-  //   'yarn.lock',
-  //   'tsconfig.json'
-  // ]
-
-  await Promise.all(buildFiles.map((fileDir: string) => {
-    consola.log(`⏳ Copying ${fileDir}...`)
-    const compiledPath = path.join(rootPath, fileDir)
-    const newPath = path.join(entrypointPath, fileDir)
-
-    return fs.copySync(compiledPath, newPath)
-  }))
 }

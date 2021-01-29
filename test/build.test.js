@@ -1,4 +1,4 @@
-// const path = require('path')
+const path = require('path')
 const runBuildLambda = require('./utils/run-build-lambda')
 
 const FOUR_MINUTES = 240000
@@ -26,8 +26,7 @@ const FOUR_MINUTES = 240000
 
 it('Should build a Typescript example', async () => {
   const { buildResult } = await runBuildLambda(
-    // path.join(__dirname, 'fixture-ts')
-    '/Users/bianpratama/Code/vrt/neo-app-fe'
+    path.join(__dirname, 'fixture-ts')
   )
 
   const { output, routes } = buildResult

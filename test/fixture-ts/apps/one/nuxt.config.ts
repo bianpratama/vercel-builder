@@ -6,7 +6,7 @@ module.exports = {
     thing
   },
   rootDir: resolve(__dirname, '../..'),
-  buildDir: resolve(__dirname, '../../.nuxt'),
+  buildDir: resolve(__dirname, '.nuxt'),
   srcDir: __dirname,
   buildModules: ['@nuxt/typescript-build'],
   modules: ['~/modules/module.ts'],

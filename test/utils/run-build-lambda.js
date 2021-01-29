@@ -11,12 +11,9 @@ function runAnalyze (wrapper, context) {
 }
 
 async function runBuildLambda (inputPath) {
-  const workPath = path.join(__dirname, '../../.tmp', path.basename(inputPath))
-  await fs.remove(workPath)
-
   const inputFiles = await glob('**', inputPath)
 
-  const nowJsonRef = inputFiles['apps/neu.app/vercel.test.json']
+  const nowJsonRef = inputFiles['apps/one/now.json']
 
   const nowJson = require(nowJsonRef.fsPath)
 
@@ -34,6 +31,8 @@ async function runBuildLambda (inputPath) {
     config: build.config
   })
 
+  const workPath = path.join(__dirname, '../../.tmp', path.basename(inputPath))
+  await fs.remove(workPath)
   await fs.mkdirs(workPath)
 
   const buildResult = await wrapper.build({
@@ -48,8 +47,6 @@ async function runBuildLambda (inputPath) {
     workPath,
     entrypoint
   })
-
-  // consola.log('buildResult', buildResult)
 
   return {
     analyzeResult,
